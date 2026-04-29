@@ -1,6 +1,6 @@
 import pandas as pd
 
-dataset = './src/dataset/mineral-properties.csv'
+dataset = './dataset/mineral-properties.csv'
 
 df = pd.read_csv(dataset)
 
