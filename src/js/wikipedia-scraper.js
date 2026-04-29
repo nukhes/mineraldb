@@ -6,7 +6,14 @@ export async function getMineralImage(name) {
         const pages = data.query.pages;
         const pageId = Object.keys(pages)[0];
         if (pageId !== "-1" && pages[pageId].thumbnail) {
-            return pages[pageId].thumbnail.source;
+            const thumbnailUrl = pages[pageId].thumbnail.source;
+            let fullUrl;
+            if (thumbnailUrl.includes('/thumb/')) {
+                fullUrl = thumbnailUrl.replace('/thumb/', '/').replace(/\/[^\/]+$/, '');
+            } else {
+                fullUrl = thumbnailUrl;
+            }
+            return fullUrl;
         }
         return null;
     } catch (e) {

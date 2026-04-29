@@ -26,9 +26,10 @@ export function renderResults(list, query) {
 
 window.renderDetails = (idx) => {
 
-    // special index to hide details view
+    // special index to hide details 
     if (idx === -1) {
         detail.style.display = 'none';
+        document.title = `mineraldb`;
         return;
     }
 
@@ -39,11 +40,12 @@ window.renderDetails = (idx) => {
     
     console.log('Rendering details for:', m);
 
+    document.title = `${m.Name.toLowerCase()}, mineraldb`;
+
     let html = `<h2>${m.Name}</h2>`;
-    
     html += '<article>';
     html += '<header><h3>Physical Properties</h3></header>';
-    html += `<img id="thumbnail" style="padding: 1em; border-radius: 8px;">`;
+    html += `<img id="thumbnail" style="padding: 1em; border-radius: 8px; max-width: 660px; margin-left: auto;">`;
     html += '<table>';
     html += '<thead><tr><th>Property</th><th>Value</th></tr></thead>';
     html += '<tbody>';
