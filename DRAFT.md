@@ -1,5 +1,3 @@
-você é um programador pragmático e especialista em mineralogia, construa a base do mineraldb com o esqueleto atual do projeto
-
 # mineraldb
 o mineraldb é base de dados sobre todos os minerais catalogados pela IMA (Associação Internacional de Mineralogia) com um sistema de busca intuitivo por *propriedades macroscópicas* (por exemplo, dureza, cor, cor do traço, hábito), *propriedades químicas* (presença de determinado elemento, estrutura e organização iônica) e *localização geográfica*.
 
