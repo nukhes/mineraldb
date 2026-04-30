@@ -3,31 +3,35 @@ import { minerals, properties, elements } from './data.js';
 export function filterResults(query) {
     if (!query.trim()) return [];
 
-    const q = query.toLowerCase();
-    let filtered = [];
+    const q = query.toLowerCase().trim();
     
-    const byName = binarySearchIndices(minerals, q);
-    if (byName.length) {
-        filtered = byName;
-    } else {
-        const elem = elements.find(e => e.toLowerCase().includes(q));
-        if (elem) {
-            filtered = minerals
-                .map((m, idx) => ({ m, idx }))
-                .filter(({ m }) => parseFloat(m[elem] || 0) > 0)
-                .map(({ idx }) => idx);
-        } else {
-            const prop = properties.find(p => p.toLowerCase().includes(q));
-            if (prop) {
-                filtered = minerals
-                    .map((m, idx) => ({ m, idx }))
-                    .filter(({ m }) => m[prop])
-                    .map(({ idx }) => idx);
-            }
-        }
+    const byPrefix = binarySearchIndices(minerals, q);
+    if (byPrefix.length) return byPrefix;
+
+    const bySubstring = minerals
+        .map((m, idx) => ({ name: m.Name.toLowerCase(), idx }))
+        .filter(({ name }) => name.includes(q))
+        .map(({ idx }) => idx);
+        
+    if (bySubstring.length) return bySubstring;
+
+    const elem = elements.find(e => e.toLowerCase().includes(q));
+    if (elem) {
+        return minerals
+            .map((m, idx) => ({ m, idx }))
+            .filter(({ m }) => parseFloat(m[elem]) > 0)
+            .map(({ idx }) => idx);
+    } 
+    
+    const prop = properties.find(p => p.toLowerCase().includes(q));
+    if (prop) {
+        return minerals
+            .map((m, idx) => ({ m, idx }))
+            .filter(({ m }) => parseFloat(m[prop]) > 0)
+            .map(({ idx }) => idx);
     }
     
-    return filtered;
+    return [];
 }
 
 function binarySearchIndices(arr, target) {
