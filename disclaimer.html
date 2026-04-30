@@ -20,9 +20,306 @@
     </header>
     <main>
         <article>
+            <h1>Disclaimer</h1>
             <p>
-                Mostly data gathered from <a href="https://rruff.info/ima/">Rruff IMA Catalog</a> and <a href="https://www.kaggle.com/datasets/vinven7/comprehensive-database-of-minerals">Mindat</a>, besides that i have plans to use Machine Learning and AI to improve dataset while being accurate and reliable. This site is in early stage of development, expect bugs and missing data, but i will try my best to make it better. If you have any suggestion or feedback, contact me.
+                Mostly data gathered from <a href="https://rruff.info/ima/">Rruff IMA Catalog</a> and <a href="https://www.kaggle.com/datasets/vinven7/comprehensive-database-of-minerals">Comprehensive database of Minerals</a>, besides that i have plans to use Machine Learning and AI to improve dataset while being accurate and reliable. This site is in early stage of development, expect bugs and missing data, but i will try my best to make it better. If you have any suggestion or feedback, contact me.
             </p>
+            <h2>What i did?</h2>
+            <p>
+                The code used to process the data and generate the final CSV file that this site uses is available below. The first snippet reads "Rruff IMA Catalog" and the "Comprehensive database of Minerals", identifies new minerals, parses their chemical formulas, and calculates the count of each element and the molar mass. The final dataset is saved as 'final.csv'.
+            </p>
+            <p>
+                The other snippet is a sanity checker that performs various integrity checks on the final CSV file, such as verifying the structure, checking for duplicates, validating physical property ranges, and ensuring chemical logic consistency. It provides a report of any errors or warnings found during the checks.
+            </p>
+            <p>
+                Both scripts where made with help of AI, but they are simple enough to be audited and understood by anyone with basic Python and data processing knowledge. If you want to run them yourself, make sure you have the required CSV files ('ima.csv' and 'mineral.csv') in the same directory as the scripts, and that you have the necessary Python libraries installed (pandas, numpy).
+            </p>
+            <pre>
+                <code>
+import pandas as pd
+import re
+from collections import defaultdict
+
+def parse_formula(formula):
+    """Lê a fórmula química e retorna um dicionário com a contagem de átomos por Símbolo."""
+    if not isinstance(formula, str) or not formula.strip() or pd.isna(formula):
+        return defaultdict(int)
+    
+    formula = re.sub(r'\s+', '', formula)
+    formula = re.sub(r'([A-Z][a-z]?\d*)\+', r'\1', formula)
+    formula = re.sub(r'([A-Z][a-z]?\d*)-', r'\1', formula)
+    
+    stack = [defaultdict(int)]
+    i = 0
+    n = len(formula)
+    
+    while i < n:
+        if formula[i].isupper():
+            elem = formula[i]
+            i += 1
+            if i < n and formula[i].islower():
+                elem += formula[i]
+                i += 1
+            num_str = ''
+            while i < n and formula[i].isdigit():
+                num_str += formula[i]
+                i += 1
+            num = int(num_str) if num_str else 1
+            stack[-1][elem] += num
+            
+        elif formula[i] in '([':
+            stack.append(defaultdict(int))
+            i += 1
+            
+        elif formula[i] in ')]':
+            i += 1
+            num_str = ''
+            while i < n and formula[i].isdigit():
+                num_str += formula[i]
+                i += 1
+            multiplier = int(num_str) if num_str else 1
+            
+            if len(stack) > 1:
+                group = stack.pop()
+                for e, c in group.items():
+                    stack[-1][e] += c * multiplier
+        else:
+            i += 1
+            
+    resultado_final = defaultdict(int)
+    for group in stack:
+        for e, c in group.items():
+            resultado_final[e] += c
+            
+    return resultado_final
+
+atomic_weights = {
+    'H': 1.00794, 'He': 4.002602, 'Li': 6.941, 'Be': 9.012182, 'B': 10.811, 'C': 12.0107, 'N': 14.0067, 'O': 15.9994, 
+    'F': 18.9984032, 'Ne': 20.1797, 'Na': 22.98976928, 'Mg': 24.3050, 'Al': 26.9815386, 'Si': 28.0855, 'P': 30.973762, 
+    'S': 32.065, 'Cl': 35.453, 'Ar': 39.948, 'K': 39.0983, 'Ca': 40.078, 'Sc': 44.955912, 'Ti': 47.867, 'V': 50.9415, 
+    'Cr': 51.9961, 'Mn': 54.938045, 'Fe': 55.845, 'Co': 58.933195, 'Ni': 58.6934, 'Cu': 63.546, 'Zn': 65.38, 'Ga': 69.723, 
+    'Ge': 72.64, 'As': 74.92160, 'Se': 78.96, 'Br': 79.904, 'Kr': 83.798, 'Rb': 85.4678, 'Sr': 87.62, 'Y': 88.90585, 
+    'Zr': 91.224, 'Nb': 92.90638, 'Mo': 95.96, 'Tc': 98.0, 'Ru': 101.07, 'Rh': 102.90550, 'Pd': 106.42, 'Ag': 107.8682, 
+    'Cd': 112.411, 'In': 114.818, 'Sn': 118.710, 'Sb': 121.760, 'Te': 127.60, 'I': 126.90447, 'Xe': 131.293, 
+    'Cs': 132.9054519, 'Ba': 137.327, 'La': 138.90547, 'Ce': 140.116, 'Pr': 140.90765, 'Nd': 144.242, 'Pm': 145.0, 
+    'Sm': 150.36, 'Eu': 151.964, 'Gd': 157.25, 'Tb': 158.92535, 'Dy': 162.500, 'Ho': 164.93032, 'Er': 167.259, 
+    'Tm': 168.93421, 'Yb': 173.054, 'Lu': 174.9668, 'Hf': 178.49, 'Ta': 180.94788, 'W': 183.84, 'Re': 186.207, 
+    'Os': 190.23, 'Ir': 192.217, 'Pt': 195.084, 'Au': 196.966569, 'Hg': 200.59, 'Tl': 204.3833, 'Pb': 207.2, 
+    'Bi': 208.98040, 'Po': 209.0, 'At': 210.0, 'Rn': 222.0, 'Fr': 223.0, 'Ra': 226.0, 'Ac': 227.0, 'Th': 232.03806, 
+    'Pa': 231.03588, 'U': 238.02891
+}
+
+symbol_to_name = {
+    'H': 'Hydrogen', 'He': 'Helium', 'Li': 'Lithium', 'Be': 'Beryllium', 'B': 'Boron', 'C': 'Carbon', 'N': 'Nitrogen', 
+    'O': 'Oxygen', 'F': 'Fluorine', 'Ne': 'Neon', 'Na': 'Sodium', 'Mg': 'Magnesium', 'Al': 'Aluminium', 'Si': 'Silicon', 
+    'P': 'Phosphorus', 'S': 'Sulfur', 'Cl': 'Chlorine', 'Ar': 'Argon', 'K': 'Potassium', 'Ca': 'Calcium', 'Sc': 'Scandium', 
+    'Ti': 'Titanium', 'V': 'Vanadium', 'Cr': 'Chromium', 'Mn': 'Manganese', 'Fe': 'Iron', 'Co': 'Cobalt', 'Ni': 'Nickel', 
+    'Cu': 'Copper', 'Zn': 'Zinc', 'Ga': 'Gallium', 'Ge': 'Germanium', 'As': 'Arsenic', 'Se': 'Selenium', 'Br': 'Bromine', 
+    'Kr': 'Krypton', 'Rb': 'Rubidium', 'Sr': 'Strontium', 'Y': 'Yttrium', 'Zr': 'Zirconium', 'Nb': 'Niobium', 'Mo': 'Molybdenum', 
+    'Tc': 'Technetium', 'Ru': 'Ruthenium', 'Rh': 'Rhodium', 'Pd': 'Palladium', 'Ag': 'Silver', 'Cd': 'Cadmium', 'In': 'Indium', 
+    'Sn': 'Tin', 'Sb': 'Antimony', 'Te': 'Tellurium', 'I': 'Iodine', 'Xe': 'Xenon', 'Cs': 'Cesium', 'Ba': 'Barium', 
+    'La': 'Lanthanum', 'Ce': 'Cerium', 'Pr': 'Praseodymium', 'Nd': 'Neodymium', 'Pm': 'Promethium', 'Sm': 'Samarium', 
+    'Eu': 'Europium', 'Gd': 'Gadolinium', 'Tb': 'Terbium', 'Dy': 'Dysprosium', 'Ho': 'Holmium', 'Er': 'Erbium', 'Tm': 'Thulium', 
+    'Yb': 'Ytterbium', 'Lu': 'Lutetium', 'Hf': 'Hafnium', 'Ta': 'Tantalum', 'W': 'Tungsten', 'Re': 'Rhenium', 'Os': 'Osmium', 
+    'Ir': 'Iridium', 'Pt': 'Platinum', 'Au': 'Gold', 'Hg': 'Mercury', 'Tl': 'Thallium', 'Pb': 'Lead', 'Bi': 'Bismuth', 
+    'Po': 'Polonium', 'At': 'Astatine', 'Rn': 'Radon', 'Fr': 'Francium', 'Ra': 'Radium', 'Ac': 'Actinium', 'Th': 'Thorium', 
+    'Pa': 'Protactinium', 'U': 'Uranium'
+}
+
+print("Lendo os arquivos...")
+ima_df = pd.read_csv('ima.csv')
+props_df = pd.read_csv('mineral.csv')
+
+existing_names = set(props_df['Name'].str.strip().str.lower())
+new_minerals = ima_df[~ima_df['Name'].str.strip().str.lower().isin(existing_names)].copy()
+
+new_rows = []
+colunas_originais = props_df.columns
+
+for _, row in new_minerals.iterrows():
+    name = str(row['Name']).strip()
+    formula_str = row.get('CNMMN/CNMNC approved formula', '')
+    
+    row_dict = {col: 0.0 for col in colunas_originais}
+    row_dict['Name'] = name
+    
+    counts = parse_formula(formula_str)
+    
+    for symbol, count in counts.items():
+        full_name = symbol_to_name.get(symbol)
+        if full_name and full_name in colunas_originais:
+            row_dict[full_name] = float(count)
+            
+    row_dict['count'] = sum(counts.values())
+    row_dict['Molar Mass'] = sum(counts.get(el, 0) * atomic_weights.get(el, 0) for el in counts)
+    
+    new_rows.append(row_dict)
+
+if new_rows:
+    new_df = pd.DataFrame(new_rows, columns=colunas_originais)
+    final_df = pd.concat([props_df, new_df], ignore_index=True)
+else:
+    final_df = props_df.copy()
+
+final_df.to_csv('final.csv', index=False)
+
+print(f"\n--- PROCESSO CONCLUÍDO ---")
+print(f"Novos minerais identificados na IMA: {len(new_minerals)}")
+print(f"Total de registros no CSV final: {len(final_df)}")
+                </code>
+            </pre>
+            <pre>
+                <code>
+import pandas as pd
+import numpy as np
+
+# Dicionários de referência para cálculos físico-químicos
+atomic_weights = {
+    'H': 1.00794, 'He': 4.002602, 'Li': 6.941, 'Be': 9.012182, 'B': 10.811, 'C': 12.0107, 'N': 14.0067, 'O': 15.9994, 
+    'F': 18.9984032, 'Ne': 20.1797, 'Na': 22.98976928, 'Mg': 24.3050, 'Al': 26.9815386, 'Si': 28.0855, 'P': 30.973762, 
+    'S': 32.065, 'Cl': 35.453, 'Ar': 39.948, 'K': 39.0983, 'Ca': 40.078, 'Sc': 44.955912, 'Ti': 47.867, 'V': 50.9415, 
+    'Cr': 51.9961, 'Mn': 54.938045, 'Fe': 55.845, 'Co': 58.933195, 'Ni': 58.6934, 'Cu': 63.546, 'Zn': 65.38, 'Ga': 69.723, 
+    'Ge': 72.64, 'As': 74.92160, 'Se': 78.96, 'Br': 79.904, 'Kr': 83.798, 'Rb': 85.4678, 'Sr': 87.62, 'Y': 88.90585, 
+    'Zr': 91.224, 'Nb': 92.90638, 'Mo': 95.96, 'Tc': 98.0, 'Ru': 101.07, 'Rh': 102.90550, 'Pd': 106.42, 'Ag': 107.8682, 
+    'Cd': 112.411, 'In': 114.818, 'Sn': 118.710, 'Sb': 121.760, 'Te': 127.60, 'I': 126.90447, 'Xe': 131.293, 
+    'Cs': 132.9054519, 'Ba': 137.327, 'La': 138.90547, 'Ce': 140.116, 'Pr': 140.90765, 'Nd': 144.242, 'Pm': 145.0, 
+    'Sm': 150.36, 'Eu': 151.964, 'Gd': 157.25, 'Tb': 158.92535, 'Dy': 162.500, 'Ho': 164.93032, 'Er': 167.259, 
+    'Tm': 168.93421, 'Yb': 173.054, 'Lu': 174.9668, 'Hf': 178.49, 'Ta': 180.94788, 'W': 183.84, 'Re': 186.207, 
+    'Os': 190.23, 'Ir': 192.217, 'Pt': 195.084, 'Au': 196.966569, 'Hg': 200.59, 'Tl': 204.3833, 'Pb': 207.2, 
+    'Bi': 208.98040, 'Po': 209.0, 'At': 210.0, 'Rn': 222.0, 'Fr': 223.0, 'Ra': 226.0, 'Ac': 227.0, 'Th': 232.03806, 
+    'Pa': 231.03588, 'U': 238.02891
+}
+
+symbol_to_name = {
+    'H': 'Hydrogen', 'He': 'Helium', 'Li': 'Lithium', 'Be': 'Beryllium', 'B': 'Boron', 'C': 'Carbon', 'N': 'Nitrogen', 
+    'O': 'Oxygen', 'F': 'Fluorine', 'Ne': 'Neon', 'Na': 'Sodium', 'Mg': 'Magnesium', 'Al': 'Aluminium', 'Si': 'Silicon', 
+    'P': 'Phosphorus', 'S': 'Sulfur', 'Cl': 'Chlorine', 'Ar': 'Argon', 'K': 'Potassium', 'Ca': 'Calcium', 'Sc': 'Scandium', 
+    'Ti': 'Titanium', 'V': 'Vanadium', 'Cr': 'Chromium', 'Mn': 'Manganese', 'Fe': 'Iron', 'Co': 'Cobalt', 'Ni': 'Nickel', 
+    'Cu': 'Copper', 'Zn': 'Zinc', 'Ga': 'Gallium', 'Ge': 'Germanium', 'As': 'Arsenic', 'Se': 'Selenium', 'Br': 'Bromine', 
+    'Kr': 'Krypton', 'Rb': 'Rubidium', 'Sr': 'Strontium', 'Y': 'Yttrium', 'Zr': 'Zirconium', 'Nb': 'Niobium', 'Mo': 'Molybdenum', 
+    'Tc': 'Technetium', 'Ru': 'Ruthenium', 'Rh': 'Rhodium', 'Pd': 'Palladium', 'Ag': 'Silver', 'Cd': 'Cadmium', 'In': 'Indium', 
+    'Sn': 'Tin', 'Sb': 'Antimony', 'Te': 'Tellurium', 'I': 'Iodine', 'Xe': 'Xenon', 'Cs': 'Cesium', 'Ba': 'Barium', 
+    'La': 'Lanthanum', 'Ce': 'Cerium', 'Pr': 'Praseodymium', 'Nd': 'Neodymium', 'Pm': 'Promethium', 'Sm': 'Samarium', 
+    'Eu': 'Europium', 'Gd': 'Gadolinium', 'Tb': 'Terbium', 'Dy': 'Dysprosium', 'Ho': 'Holmium', 'Er': 'Erbium', 'Tm': 'Thulium', 
+    'Yb': 'Ytterbium', 'Lu': 'Lutetium', 'Hf': 'Hafnium', 'Ta': 'Tantalum', 'W': 'Tungsten', 'Re': 'Rhenium', 'Os': 'Osmium', 
+    'Ir': 'Iridium', 'Pt': 'Platinum', 'Au': 'Gold', 'Hg': 'Mercury', 'Tl': 'Thallium', 'Pb': 'Lead', 'Bi': 'Bismuth', 
+    'Po': 'Polonium', 'At': 'Astatine', 'Rn': 'Radon', 'Fr': 'Francium', 'Ra': 'Radium', 'Ac': 'Actinium', 'Th': 'Thorium', 
+    'Pa': 'Protactinium', 'U': 'Uranium'
+}
+
+# Criar mapeamento inverso (Nome -> Peso Atómico)
+name_to_weight = {name: atomic_weights[sym] for sym, name in symbol_to_name.items()}
+
+class MineralSanityChecker:
+    def __init__(self, original_path, final_path):
+        print(f"A carregar o ficheiro original: {original_path}")
+        self.df_orig = pd.read_csv(original_path)
+        print(f"A carregar o ficheiro final: {final_path}")
+        self.df_final = pd.read_csv(final_path)
+        self.errors = 0
+        self.warnings = 0
+
+    def relatorio(self, msg, level="INFO"):
+        if level == "FATAL":
+            print(f"[FATAL] {msg}")
+            self.errors += 1
+        elif level == "AVISO":
+            print(f"[AVISO] {msg}")
+            self.warnings += 1
+        else:
+            print(f"[INFO] {msg}")
+
+    def check_structure(self):
+        print("\n--- 1. TESTE DE INTEGRIDADE ESTRUTURAL ---")
+        cols_orig = list(self.df_orig.columns)
+        cols_final = list(self.df_final.columns)
+        
+        if cols_orig != cols_final:
+            self.relatorio("As colunas do ficheiro final não coincidem com as do original!", "FATAL")
+            diff = set(cols_orig).symmetric_difference(set(cols_final))
+            print(f"   Diferenças encontradas: {diff}")
+        else:
+            self.relatorio("As colunas coincidem perfeitamente.")
+
+        # Teste de NaNs
+        nans = self.df_final.isna().sum().sum()
+        if nans > 0:
+            self.relatorio(f"Encontrados {nans} valores nulos (NaN) no ficheiro final. Deveriam ser 0.0.", "FATAL")
+        else:
+            self.relatorio("Nenhum valor NaN detetado. Dados consistentes.")
+
+    def check_uniqueness(self):
+        print("\n--- 2. TESTE DE SINGULARIDADE (DUPLICADOS) ---")
+        nomes = self.df_final['Name'].str.strip().str.lower()
+        duplicados = nomes.duplicated().sum()
+        if duplicados > 0:
+            self.relatorio(f"Foram encontrados {duplicados} minerais duplicados!", "FATAL")
+        else:
+            self.relatorio("Todos os minerais são únicos.")
+
+    def check_macroscopic_bounds(self):
+        print("\n--- 3. TESTE DE LIMITES FÍSICOS (MACROSCÓPICOS) ---")
+        df = self.df_final
+        
+        # Teste de Dureza de Mohs (Deve ser entre 0 e 10, permitindo um pouco mais para anomalias, mas alertando)
+        if 'Mohs Hardness' in df.columns:
+            invalid_mohs = df[(df['Mohs Hardness'] < 0) | (df['Mohs Hardness'] > 15)]
+            if not invalid_mohs.empty:
+                self.relatorio(f"{len(invalid_mohs)} registos com Dureza de Mohs impossível (<0 ou >15).", "AVISO")
+        
+        # Teste de Densidade/Peso Específico (Não pode ser negativo)
+        for col in ['Specific Gravity', 'Calculated Density']:
+            if col in df.columns:
+                invalid_density = df[df[col] < 0]
+                if not invalid_density.empty:
+                    self.relatorio(f"{len(invalid_density)} registos com {col} negativo. Isto viola a física.", "FATAL")
+
+    def check_chemical_logic(self):
+        print("\n--- 4. TESTE DE LÓGICA QUÍMICA ---")
+        df = self.df_final
+        
+        # Obter apenas as colunas que são elementos químicos válidos
+        element_cols = [col for col in df.columns if col in name_to_weight]
+        
+        # Verificar se não há contagens atómicas negativas
+        if (df[element_cols] < 0).any().any():
+            self.relatorio("Existem contagens de átomos negativas no dataset!", "FATAL")
+            
+        # Teste da soma de átomos vs. 'count'
+        if 'count' in df.columns:
+            # Tolerância pequena para erros de vírgula flutuante
+            soma_elementos = df[element_cols].sum(axis=1)
+            discrepancias = df[np.abs(df['count'] - soma_elementos) > 0.1]
+            if not discrepancias.empty:
+                self.relatorio(f"{len(discrepancias)} minerais onde a soma dos átomos difere da coluna 'count'.", "AVISO")
+                # Nota: Isto é um AVISO e não FATAL porque minerais antigos no dataset original podem usar colunas de radicais (ex: 'Sulphate') em vez de elementos, o que distorce o count.
+
+    def run_all(self):
+        self.check_structure()
+        self.check_uniqueness()
+        self.check_macroscopic_bounds()
+        self.check_chemical_logic()
+        
+        print("\n=============================================")
+        print(f"VEREDITO FINAL DA AUDITORIA:")
+        print(f"Erros Fatais: {self.errors}")
+        print(f"Avisos: {self.warnings}")
+        if self.errors == 0:
+            print("O seu ficheiro é estruturalmente sólido e seguro para uso em modelos de IA e no Frontend.")
+        else:
+            print("O ficheiro contém falhas graves de arquitetura. NÃO o utilize antes de corrigir.")
+        print("=============================================\n")
+
+
+if __name__ == "__main__":
+    # Caminhos para os ficheiros (ajuste consoante o seu ambiente)
+    ORIGINAL = 'mineral.csv'
+    FINAL = 'final.csv'
+    
+    checker = MineralSanityChecker(ORIGINAL, FINAL)
+    checker.run_all()
+                </code>
+            </pre>
         </article>
     </main>
 
