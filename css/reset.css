@@ -1,3 +1,7 @@
+* {
+  vertical-align: center;
+}
+
 body {
   display: flex;
   flex-direction: column;
@@ -7,4 +11,9 @@ body {
 
 main {
   flex: 1;
+}
+
+
+h2,h3,h4,h5 {
+  margin: 0.5em 0;
 }
