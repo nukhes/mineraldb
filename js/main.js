@@ -9,4 +9,12 @@ loadCSV(minerals).catch(err => { console.error(err) });
 loadTheme();
 
 const searchBox = document.querySelector('#search');
-searchBox.addEventListener('input', e => renderResults(filterResults(e.target.value), e.target.value));
+let debounce;
+searchBox.addEventListener('input', (e) => {
+    const query = e.target.value;
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+        const results = filterResults(query);
+        renderResults(results, query);
+    }, 300);
+});
