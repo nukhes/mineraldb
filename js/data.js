@@ -11,7 +11,6 @@ export function loadCSV(csvFile) {
         .then(r => r.text())
         .then(csv => {
             const lines = csv.replace(/\r/g, '').trim().split('\n');
-            
             const headers = lines[0].split(',').map(h => h.trim());
             headers.forEach((h, i) => headerMap[h] = i);
             
@@ -21,13 +20,13 @@ export function loadCSV(csvFile) {
             elements.push(...headers.slice(start, end + 1));
             
             // populate properties
+            // we take all properties between 'Crystal Structure' and 'Dispersion', plus a few at the end of the file
             start = headers.indexOf('Crystal Structure');
             end = headers.indexOf('Dispersion');
-            const propCalculadas = ['Molar Mass', 'Molar Volume', 'Calculated Density'];
-            
+            const lastProperties = ['Molar Mass', 'Molar Volume', 'Calculated Density'];
             properties.push(
                 ...headers.slice(start, end + 1), 
-                ...propCalculadas
+                ...lastProperties
             );
 
             // populate minerals
