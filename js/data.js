@@ -20,8 +20,9 @@ export function loadCSV(csvFile) {
             elements.push(...headers.slice(start, end + 1));
             
             // populate properties
-            // we take all properties between 'Crystal Structure' and 'Dispersion', plus a few at the end of the file
-            start = headers.indexOf('Crystal Structure');
+            // we take all properties between 'Crystal Structure' and 'Dispersion', plus a few at the end of the filet
+            // TEMP CHANGE FOR Mohs Hardness SEE COMMIT MSG
+            start = headers.indexOf('Mohs Hardness');
             end = headers.indexOf('Dispersion');
             const lastProperties = ['Molar Mass', 'Molar Volume', 'Calculated Density'];
             properties.push(

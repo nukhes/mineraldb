@@ -139,7 +139,7 @@ export function renderResults(list, query) {
         return `
         <article onclick="renderDetails(${idx})">
             <h3>${m.Name}</h3>
-            <small>${m['Crystal Structure']} | Hardness: ${m['Mohs Hardness']}</small>
+            <small>Hardness: ${m['Mohs Hardness']}</small>
         </article>
     `;
     }).join('');
