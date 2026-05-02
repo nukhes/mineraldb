@@ -1,9 +1,10 @@
 import { properties, elements, getMineral } from './data.js';
-import { getMineralImage } from './wikipedia-scraper.js';
+import { getMineralSummary } from './wikipedia-scraper.js';
+import { filterResults } from './search.js';
+import { searchBox } from './main.js';
 
 const results = document.getElementById('results');
 const detail = document.getElementById('detail');
-
 const symbol = {
     "Hydrogen": "H",
     "Helium": "He",
@@ -17,7 +18,7 @@ const symbol = {
     "Neon": "Ne",
     "Sodium": "Na",
     "Magnesium": "Mg",
-    "Aluminum": "Al",
+    "Aluminium": "Al",
     "Silicon": "Si",
     "Phosphorus": "P",
     "Sulfur": "S",
@@ -125,7 +126,7 @@ const symbol = {
     "Oganesson": "Og"
 };
 
-export function renderResults(list, query) {
+export const renderResults = (list, query) => {
     if (!list.length && query) {
         results.innerHTML = 'No minerals found';
         return;
@@ -137,7 +138,7 @@ export function renderResults(list, query) {
     results.innerHTML = list.slice(0, 60).map(idx => {
         const m = getMineral(idx);
         return `
-        <article onclick="renderDetails(${idx})">
+        <article onclick="renderDetails(${idx}, '${query}')">
             <h3>${m.Name}</h3>
             <small>Hardness: ${m['Mohs Hardness']}</small>
         </article>
@@ -145,7 +146,15 @@ export function renderResults(list, query) {
     }).join('');
 }
 
-window.renderDetails = (idx) => {
+window.lastSearch = (query) => {
+    renderDetails(-1);
+    const results = filterResults(query);
+    renderResults(results, query)
+    searchBox.value=query
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+window.renderDetails = (idx, last_query='diamond') => {
 
     // special index to hide details 
     if (idx === -1) {
@@ -154,53 +163,87 @@ window.renderDetails = (idx) => {
         return;
     }
 
-    detail.style.display = 'block';
-
-    const m = getMineral(idx);
-    const elementsPresent = elements.filter(e => parseFloat(m[e] || 0) > 0);
-    
-    console.log('Rendering details for:', m);
-
-    document.title = `${m.Name.toLowerCase()}, mineraldb`;
-
-    let html = `<h2>${m.Name}</h2>`;
-    html += '<article>';
-    html += '<header><nav><h3>Physical Properties</h3> <button>Back to results</button></nav></header>';
-    html += `<img id="thumbnail" style="padding: 1em; border-radius: 8px; max-width: 660px; margin-left: auto;">`;
-    html += '<table>';
-    html += '<thead><tr><th>Property</th><th>Value</th></tr></thead>';
-    html += '<tbody>';
-    properties.forEach(p => {
-        const value = m[p];
-        html += '<tr>';
-        html += `<td>${p}</td>`;
-        if (parseFloat(value)) {
-            html += `<td>${parseFloat(value).toFixed(2)}</td>`;
-        } else {
-            html += `<td>${value}</td>`;
-        }
-        html += '</tr>';
-    });
-    html += '</tbody></table></article>';
-    
-    if (elementsPresent.length) {
-        html += '<footer>';
-        html += '<h3>Elements</h3>';
-        html += '<ul>';
-        elementsPresent.forEach(e => {
-            html += `<li class="element">${symbol[e]} (${e})</li>`;
-        });
-        html += '</ul></footer>';
-    }
-    
-    detail.innerHTML = html;
+    // default behavior
     detail.style.display = 'block';
     results.innerHTML = '';
+
+    const m = getMineral(idx);
+    const mineralName = m.Name;
+    const composition = elements.filter(e => parseFloat(m[e] || 0) > 0);
+    let propertiesHTML = '';
+    let elementsHTML = '';
+    
+    // write propertiesHTML in a table
+    properties.forEach(p => {
+        const value = m[p];
+        propertiesHTML += '<tr>';
+        propertiesHTML += `<td>${p}</td>`;
+        if (parseFloat(value)) {
+            propertiesHTML += `<td>${parseFloat(value).toFixed(2)}</td>`;
+        } else {
+            propertiesHTML += `<td>${value}</td>`;
+        }
+        propertiesHTML += '</tr>';
+    });
+    
+    // write elementsHTML in list
+    composition.forEach(e => {
+        console.log(e)
+        elementsHTML += `<li class="element">${symbol[e]} (${e})</li>`;
+    });
+    
+    document.title = `${mineralName.toLowerCase()}, mineraldb`;
+
+    let html = `
+    <nav>
+        <h2>${mineralName}</h2>
+        <button onclick='lastSearch("${last_query}")'>Back to results</button>
+    </nav>
+
+    <article id="summary" style='display: none;'>
+        <img>
+        <p></p>
+    </article>
+
+    <article>
+        <header>
+            <h3>Physical Properties</h3>
+        </header>
+        <table>
+            <thead>
+                <tr>
+                    <th>Property</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${propertiesHTML}
+            </tbody>
+        </table>
+
+        <footer>
+            <h3>Elements<h3>
+            <ul>
+                ${elementsHTML}
+            </ul>
+        </footer>
+    </article>
+    `;
+
+    detail.innerHTML = html;
+
+    // scraps wikipedia for summary and thumbnail, applying these to the respective HTML
+    // elements.
+    getMineralSummary(mineralName).then(data => {
+        if (!data) { return; }
+
+        const summary = document.querySelector('#summary');
+        const thumbnail = summary.querySelector('#summary img');
+        const text = document.querySelector('#summary p');
+        thumbnail.setAttribute('src', data.thumbnail);
+        text.innerHTML=data.summary;
+        summary.style.display = 'block';
+    });
+
     detail.scrollIntoView({ behavior: 'smooth' });
-
-    getMineralImage(m.Name).then(imgUrl => {
-        const thumbnail = document.querySelector('#thumbnail');
-        thumbnail.setAttribute('src', imgUrl || 'https://placehold.co/800x400?text=not%20found.');
-   });
-
 }

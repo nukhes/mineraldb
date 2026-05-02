@@ -4,11 +4,11 @@ import { renderResults } from './render.js';
 import { filterResults } from './search.js';
 
 const minerals = 'dataset/mineral-properties.csv';
+export const searchBox = document.querySelector('#search');
 
 loadCSV(minerals).catch(err => { console.error(err) });
 loadTheme();
 
-const searchBox = document.querySelector('#search');
 let debounce;
 searchBox.addEventListener('input', (e) => {
     const query = e.target.value;

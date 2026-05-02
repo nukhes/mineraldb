@@ -1,22 +1,20 @@
-export async function getMineralImage(name) {
-    const url =`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(name)}&prop=pageimages&format=json&pithumbsize=1000&origin=*`;
+export async function getMineralSummary(name) {
+    const api = 'https://en.wikipedia.org/api/rest_v1/page/summary/';
+    const url = `${api}${encodeURIComponent(name)}`
+    const placeholder = {
+        'thumbnail': 'https://placehold.co/800x400?text=not%20found.',
+        'summary': 'No summary info.'
+    };
+    
     try {
         const res = await fetch(url);
         const data = await res.json();
-        const pages = data.query.pages;
-        const pageId = Object.keys(pages)[0];
-        if (pageId !== "-1" && pages[pageId].thumbnail) {
-            const thumbnailUrl = pages[pageId].thumbnail.source;
-            let fullUrl;
-            if (thumbnailUrl.includes('/thumb/')) {
-                fullUrl = thumbnailUrl.replace('/thumb/', '/').replace(/\/[^\/]+$/, '');
-            } else {
-                fullUrl = thumbnailUrl;
-            }
-            return fullUrl;
-        }
-        return null;
-    } catch (e) {
+        return {
+            thumbnail: data.thumbnail.source || placeholder.thumbnail,
+            summary: data.extract || placeholder.summary
+        };
+    } catch (err) {
+        console.warn(err);
         return null;
     }
 }
